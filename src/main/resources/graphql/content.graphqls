@@ -1,0 +1,12 @@
+# schema of the content submitted by the user
+type Content {
+    id : Float
+    content : String!
+    assets : [Assets]
+    pins : [Pins]
+}
+
+type Query{
+    localPins(lat : Float, lon : Float) : [Pins]
+    content(id : Float) : Content
+}
