@@ -24,6 +24,8 @@ dependencies {
 	runtimeOnly ("com.graphql-java-kickstart:playground-spring-boot-starter:11.0.0")
 	runtimeOnly ("com.graphql-java-kickstart:voyager-spring-boot-starter:11.0.0")
 
+	implementation ("org.springframework.boot:spring-boot-starter-security")
+
 //	neo4j dependancy
 
 	testImplementation("io.projectreactor:reactor-test")

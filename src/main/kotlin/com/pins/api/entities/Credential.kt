@@ -1,4 +1,5 @@
 package com.pins.api.entities
+import com.pins.api.companion.Validatable
 import com.pins.api.utils.toLong
 import org.springframework.data.neo4j.core.schema.GeneratedValue
 import org.springframework.data.neo4j.core.schema.Id
@@ -21,7 +22,7 @@ import java.time.LocalDateTime
  *  @param secret refers to the API Key
  * For [CredentialProvider.EMAIL_PASSWORD]
  *  @param identifier refers to the email
- *  @param secret refers to the password
+ *  @param secret refers to the password or token
  */
 
 @Node("Credential")
@@ -33,7 +34,9 @@ data class Credential(
         var provider : CredentialProvider = CredentialProvider.EMAIL_PASSWORD,
         var secret : String,
         var active : Boolean = true,
-)
+):Validatable {
+        override fun valid(): Boolean = identifier.isNotBlank() && secret.isNotBlank() && active
+}
 
 /**
  * Defined the different types of credentials supported by the app

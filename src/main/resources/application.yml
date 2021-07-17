@@ -14,7 +14,9 @@ logging:
 spring:
     application:
         name: pins-api
-
+    data:
+        neo4j:
+            auto-index: validate
     neo4j:
         authentication:
             password: root
