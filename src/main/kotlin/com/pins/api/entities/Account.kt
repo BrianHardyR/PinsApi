@@ -27,7 +27,7 @@ data class Account(
          */
 
         @Relationship(type = "OWNED_BY", direction = Relationship.Direction.INCOMING)
-        var owner : UserModel? = null,
+        var owner : UserModel? = null
 )
 
 enum class AccountType{

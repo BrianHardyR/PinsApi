@@ -14,8 +14,9 @@ class AuthenticationServiceTests {
 
     @Test
     fun loginAndAssignTokenTest(){
-        val emailPasswordAuthRequest = EmailPasswordAuthRequest(email = "testuser1@email.com", password = "password")
-        authenticationService.loginAndAssignToken(emailPasswordAuthRequest)
+        val emailPasswordAuthRequest = EmailPasswordAuthRequest(email = "test3@email.com", password = "password")
+        val token = authenticationService.loginAndAssignToken(emailPasswordAuthRequest)
+        println("Token $token")
 
     }
 
@@ -52,11 +53,20 @@ class AuthenticationServiceTests {
     fun linkUserToAccountTest(){
         val linkRequest = LinkAccountRequest(
             roleOrdinal = Roles.DEVELOPER.ordinal,
-            userIdToLink = 17,
-            accountID = 13
+            userIdToLink = 7,
+            accountID = 9
         )
         val account = authenticationService.linkUserToAccount(linkRequest)
         assert(account.ID == linkRequest.accountID)
+    }
+
+    @Test
+    fun temp(){
+        val data = authenticationService.accountsRepo.findAccountsByUserId(7)
+        println("Temp relationship")
+        data.forEach {
+            println("$=================\n${it.relationship()}\n")
+        }
     }
 
 }

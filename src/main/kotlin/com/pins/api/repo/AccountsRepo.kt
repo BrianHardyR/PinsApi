@@ -2,6 +2,8 @@ package com.pins.api.repo
 
 import com.pins.api.entities.Account
 import com.pins.api.entities.AccountType
+import com.pins.api.entities.Roles
+import org.neo4j.driver.internal.value.RelationshipValue
 import org.springframework.data.neo4j.repository.Neo4jRepository
 import org.springframework.data.neo4j.repository.query.Query
 import java.util.*
@@ -9,11 +11,15 @@ import java.util.*
 interface AccountsRepo : Neo4jRepository<Account, Long> {
 
     /**
-     * Returns accounts the user has access to other than their own
+     * Returns accounts the user has access to including their own
      */
 
-    @Query("MATCH (u:User)-[:ACCESSIBLE_BY]-(a:Account) WHERE ID(u) = \$userId RETURN a")
+    @Query("MATCH (u:User)-[r:ACCESSIBLE_BY]-(a:Account) WHERE ID(u) = \$userId RETURN a")
     fun findAccountsByUserId( userId : Long ):Collection<Account>
+//optional match (u:User)-[m]-(a:Account) where ID(u)=10 and ID(a)=9 and exists(m.role) return distinct m limit 1
+    @Query("MATCH (u:User)-[r:ACCESSIBLE_BY]-(a:Account) WHERE ID(u) = \$userId and ID(a)= \$accountId RETURN a as account,r as accountRole")
+    fun findAccountRoleByUserIdAndAccountId( userId : Long , accountId : Long):AccountAndUserRoles
+
 
     /**
      * A single may have multiple accounts
@@ -28,5 +34,11 @@ interface AccountsRepo : Neo4jRepository<Account, Long> {
 
 
 
+}
 
+data class AccountAndUserRoles(
+    val account : Account,
+    private val accountRole : RelationshipValue
+){
+    fun relationship() = Roles.valueOf(accountRole["role"].asString())
 }

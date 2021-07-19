@@ -5,7 +5,12 @@ import com.pins.api.exceptions.*
 import com.pins.api.repo.AccountsRepo
 import com.pins.api.repo.CredentialsRepo
 import com.pins.api.repo.UserRepo
+import com.pins.api.security.AppUserDetails
+import com.pins.api.utils.JwtTokenUtil
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -29,6 +34,12 @@ class AuthenticationService {
     @Autowired
     lateinit var passwordEncoder: PasswordEncoder
 
+    @Autowired
+    lateinit var authenticationManager: AuthenticationManager
+
+    @Autowired
+    lateinit var jwtTokenUtil: JwtTokenUtil
+
     /**
      * Create [UserModel] Object for saving to database
      */
@@ -48,7 +59,7 @@ class AuthenticationService {
                 Credential(
                     provider = CredentialProvider.EMAIL_PASSWORD,
                     identifier = request.credential.email,
-                    secret = request.credential.password
+                    secret = passwordEncoder.encode(request.credential.password)
                 )
             )
         )
@@ -69,7 +80,12 @@ class AuthenticationService {
         val accountModel = Account(
             type = type,
             owner = user
-        )
+        ).apply {
+            accountUsers.add(UserAccountRoles(
+                role = Roles.OWNER,
+                userModel = user
+            ))
+        }
         return accountsRepo.save(accountModel).also {
             println(it.toString())
         }
@@ -80,14 +96,12 @@ class AuthenticationService {
      */
     fun assignUserToAccount(request: AssignAccountRequest): Account {
 
-        val userRef = userRepo.findById(request.userId)
-        if (!userRef.isPresent) throw UserNotFound("user with id ${request.userId} not found")
-        val user = userRef.get()
+        val user = getUserById(request.userId)
         val accountRef = accountsRepo.findByTypeAndOwnerId(request.type, user.ID!!)
         if (accountRef.isPresent) throw AccountExisits("account of type ${request.type} for user ${request.userId} already exisits")
         val accountModel = Account(
             type = request.type,
-            owner = userRef.get()
+            owner = user
         )
         return accountsRepo.save(accountModel)
 
@@ -98,19 +112,16 @@ class AuthenticationService {
      */
 
     fun linkUserToAccount(request: LinkAccountRequest): Account {
-        val accountRef = accountsRepo.findById(request.accountID)
-        if (!accountRef.isPresent) throw AccountNotFound("account of id ${request.accountID} not found")
-        val userRef = userRepo.findById(request.userIdToLink)
-        if (!userRef.isPresent) throw UserNotFound("user with id ${request.userIdToLink} not found")
-        val account = accountRef.get()
-        val user = userRef.get()
+
+        val account = getAccountById(request.accountID)
+        val user = getUserById(request.userIdToLink)
         val accountRoleExists =
             account.accountUsers.firstOrNull { userAccountRoles -> userAccountRoles.userModel.ID == user.ID && userAccountRoles.role == request.role }
         if (accountRoleExists != null) throw AccountRoleExists("user already has a role")
 
         val userAccountRoles = UserAccountRoles(
             role = request.role,
-            userModel = userRef.get()
+            userModel = user
         )
 
         return accountsRepo.save(account.apply {
@@ -126,16 +137,79 @@ class AuthenticationService {
      * if not create
      * else sign in
      */
-    fun loginAndAssignToken(request: EmailPasswordAuthRequest) {
-        val credential = credentialsRepo.findOneByIdentifierAndSecretAndActiveAndProvider(
-            identifier = request.email,
-            secret = request.password,
-            active = true,
-            provider = CredentialProvider.EMAIL_PASSWORD
+    fun loginAndAssignToken(request: EmailPasswordAuthRequest) : AppUserDetails {
+
+//        val user = userRepo.findUserByCredentialId(credential.ID!!)
+
+        val authenticate = authenticationManager.authenticate(
+            UsernamePasswordAuthenticationToken(
+                request.email,
+                request.password
+            )
         )
-        val user = userRepo.findUserByCredentialId(credential.ID!!)
+
+
+        return authenticate.principal as AppUserDetails
+    }
+
+
+    fun switchAccount(request: SwitchAccountRequest) : AppUserDetails {
+
+        val currentUserDetails = SecurityContextHolder.getContext().authentication.principal.let {
+            print("switch request")
+            print(it)
+            it
+        } as AppUserDetails
+        val user = currentUserDetails.user
+        val account = getAccountById(request.accountID)
+        val accountsRoles = accountsRepo.findAccountRoleByUserIdAndAccountId(user.ID!!,account.ID!!)
+        val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
+        val userDetails = AppUserDetails(user,user.credentials.first(),account, listOf(accountsRoles), linkedAccounts)
+
+        SecurityContextHolder.getContext()
+            .authentication = UsernamePasswordAuthenticationToken(
+            SecurityContextHolder.getContext().authentication.principal,
+            SecurityContextHolder.getContext().authentication.credentials,
+            userDetails.authorities
+        )
+
+        return userDetails
+    }
+
+    fun getDataFromAccount() : AppUserDetails{
+
+//        val username = jwtTokenUtil.getUsernameFromToken(token)
+//        val accountId = jwtTokenUtil.getAccountFromToken(token)
+//
+//        val user = getUserByUserName(username)
+//        val account = getAccountById(accountId.toLong())
+//        val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
+//        return AppUserDetails(user,user.credentials.first(),account,linkedAccounts)
+
+        return SecurityContextHolder.getContext().authentication.principal as AppUserDetails
 
     }
+
+    fun getToken(appUser : AppUserDetails) = jwtTokenUtil.generateToken(appUser)
+
+    fun getUserById(userId: Long):UserModel{
+        val userRef = userRepo.findById(userId)
+        if (!userRef.isPresent) throw UserNotFound("user not found")
+        return userRef.get()
+    }
+
+    fun getUserByUserName(username : String) : UserModel{
+        val userRef = userRepo.findByUserName(username)
+        if (!userRef.isPresent) throw UserNotFound("user not found")
+        return userRef.get()
+    }
+
+    fun getAccountById(accountID: Long): Account{
+        val accountRef = accountsRepo.findById(accountID)
+        if (!accountRef.isPresent) throw AccountNotFound("account not found")
+        return accountRef.get()
+    }
+
 
 }
 
@@ -146,7 +220,7 @@ class AuthenticationService {
 
 data class EmailPasswordAuthRequest(
     var email: String,
-    var password: String,
+    var password: String
 )
 
 data class APIAuthRequest(
@@ -158,7 +232,7 @@ data class AccountCreationRequest(
     var userName: String,
     var name: String,
     var otherNames: List<String>,
-    var credential: EmailPasswordAuthRequest,
+    var credential: EmailPasswordAuthRequest
 )
 
 data class AssignAccountRequest(
@@ -173,3 +247,7 @@ data class LinkAccountRequest(
 ) {
     val role: Roles get() = Roles.values()[roleOrdinal]
 }
+
+data class SwitchAccountRequest(
+    val accountID: Long
+)
