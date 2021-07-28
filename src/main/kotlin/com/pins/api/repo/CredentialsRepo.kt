@@ -7,6 +7,13 @@ import java.util.*
 
 
 interface CredentialsRepo : Neo4jRepository<Credential, Long> {
+
    fun findOneByIdentifierAndSecretAndActiveAndProvider(identifier : String, secret : String, active : Boolean = true , provider: CredentialProvider = CredentialProvider.EMAIL_PASSWORD ):Credential
-   fun findByIdentifier(identifier: String) : Optional<Credential>
+
+   fun findByIdentifier(identifier: String) : List<Credential>
+
+   fun findByIdentifierAndActiveAndProvider(identifier: String, active: Boolean = true, provider: CredentialProvider) : Optional<Credential>
+
+   fun findByProviderIdAndActiveAndProvider(providerId : String, active: Boolean = true, provider: CredentialProvider = CredentialProvider.GOOGLE) : Optional<Credential>
+
 }

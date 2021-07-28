@@ -1,10 +1,7 @@
 package com.pins.api.security
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.pins.api.entities.Account
-import com.pins.api.entities.AccountType
-import com.pins.api.entities.Credential
-import com.pins.api.entities.UserModel
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.pins.api.entities.*
 import com.pins.api.exceptions.UserNotFound
 import com.pins.api.repo.AccountAndUserRoles
 import com.pins.api.repo.AccountsRepo
@@ -55,10 +52,18 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
 
         auth?.userDetailsService(
             object : UserDetailsService {
-                override fun loadUserByUsername(username: String?): UserDetails {
+                override fun loadUserByUsername(usernameProvider: String?): UserDetails {
 
-                    val credentialRef = credentialsRepo.findByIdentifier(
-                        username ?: throw CredentialException("User with email $username not found")
+
+
+                    val parts = usernameProvider?.split(':') ?: throw throw CredentialException("User not found")
+
+                    val username = parts[0]
+                    val provider = CredentialProvider.valueOf(value = parts[1])
+
+                    val credentialRef = credentialsRepo.findByIdentifierAndActiveAndProvider(
+                        username,
+                        provider = provider
                     )
                     if (!credentialRef.isPresent) throw CredentialException("User with email $username not found")
                     val credential = credentialRef.get()
@@ -74,7 +79,8 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
                         credential,
                         account,
                         listOf(accountsRoles),
-                        linkedAccounts
+                        linkedAccounts,
+                        user.credentials
                     ).also {
                         println(it)
                     }
@@ -102,6 +108,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             ?.authorizeRequests()
             ?.antMatchers("/")?.permitAll()
             ?.antMatchers("/auth/login")?.permitAll()
+            ?.antMatchers("/auth/googleLogin")?.permitAll()
             ?.antMatchers("/auth/register")?.permitAll()
             ?.anyRequest()?.authenticated()
     }
@@ -125,13 +132,14 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     }
 }
 
+@JsonIgnoreProperties("accounts","credential", "password")
 class AppUserDetails(
     val user: UserModel,
     val credential: Credential,
     val account: Account,
-    @JsonIgnore
     private val accounts: Collection<AccountAndUserRoles>,
-    val linkedAccounts: Collection<Account>
+    val linkedAccounts: Collection<Account>,
+    val credentials : List<Credential> = user.credentials
 ) : UserDetails {
 
     override fun getAuthorities(): MutableCollection<out GrantedAuthority> =

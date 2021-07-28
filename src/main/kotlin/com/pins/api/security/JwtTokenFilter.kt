@@ -42,7 +42,8 @@ class JwtTokenFilter : OncePerRequestFilter(){
         print(filterChain)
 
         var token = request.getHeader(HttpHeaders.AUTHORIZATION) ?: ""
-        print("token from header $token")
+
+        print("\ntoken from header $token\n")
 
         if (token.isEmpty() || !token.startsWith("Bearer ")){
 
@@ -55,10 +56,16 @@ class JwtTokenFilter : OncePerRequestFilter(){
 
 
         val user = authService.getUserByUserName(jwtTokenUtil.getUsernameFromToken(token))
+
+        println("\nuser found\n")
+
         val account = authService.getAccountById(jwtTokenUtil.getAccountFromToken(token).toLong())
+
+        println("\naccount found\n")
+
         val accountsRoles = accountsRepo.findAccountRoleByUserIdAndAccountId(user.ID!!,account.ID!!)
         val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
-        val appUserDetails = AppUserDetails(user, user.credentials.first(), account, listOf(accountsRoles), linkedAccounts)
+        val appUserDetails = AppUserDetails(user, user.credentials.first(), account, listOf(accountsRoles), linkedAccounts,user.credentials)
 
         val authentication = UsernamePasswordAuthenticationToken(
             appUserDetails,
@@ -66,10 +73,14 @@ class JwtTokenFilter : OncePerRequestFilter(){
             appUserDetails.authorities
         )
 
+        println("\n${appUserDetails.authorities}\n")
+
         authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
 
         SecurityContextHolder.getContext().authentication = authentication
+
         filterChain.doFilter(request, response)
 
+        println("\nfilter done\n")
     }
 }

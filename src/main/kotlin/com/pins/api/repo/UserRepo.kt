@@ -12,4 +12,5 @@ interface UserRepo : Neo4jRepository<UserModel, Long> {
 
     fun findByUserName(username : String): Optional<UserModel>
 
+
 }

@@ -1,17 +1,17 @@
 package com.pins.api.entities
 
+import com.pins.api.utils.now
 import com.pins.api.utils.toLong
 import org.springframework.data.neo4j.core.schema.GeneratedValue
 import org.springframework.data.neo4j.core.schema.Id
 import org.springframework.data.neo4j.core.schema.Node
 import org.springframework.data.neo4j.core.schema.Relationship
-import java.time.LocalDateTime
 
 @Node("Account")
 data class Account(
         @Id @GeneratedValue
         var ID : Long? = null,
-        var createdAt : Long = LocalDateTime.now().toLong(),
+        var createdAt : Long = now().toLong(),
         var type : AccountType = AccountType.DEFAULT,
         var active : Boolean = true,
 

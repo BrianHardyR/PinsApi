@@ -4,6 +4,7 @@ import org.springframework.data.neo4j.core.schema.GeneratedValue
 import org.springframework.data.neo4j.core.schema.Id
 import org.springframework.data.neo4j.core.schema.RelationshipProperties
 import org.springframework.data.neo4j.core.schema.TargetNode
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.GrantedAuthority
 
 @RelationshipProperties()
@@ -40,3 +41,57 @@ enum class Roles(val friendlyName: String, description: String) : GrantedAuthori
                 override fun getAuthority() = name
         }
 }
+
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAuthority('OWNER')")
+annotation class OWNER
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAuthority('MANAGER')")
+annotation class MANAGER
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAuthority('WRITER')")
+annotation class WRITER
+
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAuthority('ASSISTANT')")
+annotation class ASSISTANT
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("hasAuthority('DEVELOPER')")
+annotation class DEVELOPER
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("!hasAuthority('OWNER')")
+annotation class NOTOWNER
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("!hasAuthority('MANAGER')")
+annotation class NOTMANAGER
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("!hasAuthority('WRITER')")
+annotation class NOTWRITER
+
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@PreAuthorize("!hasAuthority('ASSISTANT')")
+annotation class NOTASSISTANT
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+
+@PreAuthorize("!hasAuthority('DEVELOPER')")
+annotation class NOTDEVELOPER

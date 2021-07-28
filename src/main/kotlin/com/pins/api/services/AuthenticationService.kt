@@ -1,12 +1,15 @@
 package com.pins.api.services
 
+
 import com.pins.api.entities.*
 import com.pins.api.exceptions.*
 import com.pins.api.repo.AccountsRepo
 import com.pins.api.repo.CredentialsRepo
 import com.pins.api.repo.UserRepo
 import com.pins.api.security.AppUserDetails
+import com.pins.api.utils.GoogleAuthUtil
 import com.pins.api.utils.JwtTokenUtil
+import com.pins.api.utils.getLoggedInUserDetails
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -73,7 +76,7 @@ class AuthenticationService {
 
         }
         val credentialRef = credentialsRepo.findByIdentifier(request.credential.email)
-        if (credentialRef.isPresent) {
+        if (credentialRef.isNotEmpty()) {
             throw UserExistsException("email ${request.credential.email} is already taken")
         }
         // user does not exist proceed to create account
@@ -81,10 +84,12 @@ class AuthenticationService {
             type = type,
             owner = user
         ).apply {
-            accountUsers.add(UserAccountRoles(
-                role = Roles.OWNER,
-                userModel = user
-            ))
+            accountUsers.add(
+                UserAccountRoles(
+                    role = Roles.OWNER,
+                    userModel = user
+                )
+            )
         }
         return accountsRepo.save(accountModel).also {
             println(it.toString())
@@ -113,7 +118,7 @@ class AuthenticationService {
 
     fun linkUserToAccount(request: LinkAccountRequest): Account {
 
-        val account = getAccountById(request.accountID)
+        val account = getLoggedInUserDetails().account
         val user = getUserById(request.userIdToLink)
         val accountRoleExists =
             account.accountUsers.firstOrNull { userAccountRoles -> userAccountRoles.userModel.ID == user.ID && userAccountRoles.role == request.role }
@@ -131,19 +136,31 @@ class AuthenticationService {
     }
 
 
+    fun unlinkUserFromAccount(request: LinkAccountRequest): Boolean {
+        val account = getLoggedInUserDetails().account
+        val user = getUserById(request.userIdToLink)
+        val accountRole =
+            account.accountUsers.firstOrNull { userAccountRoles -> userAccountRoles.userModel.ID == user.ID && userAccountRoles.role != Roles.OWNER }
+                ?: throw AccountRoleNotFound("user already has a role")
+
+        return account.accountUsers.remove(accountRole)
+
+    }
+
+
     /**
      * Create account or sign in user
      * check if email exists
      * if not create
      * else sign in
      */
-    fun loginAndAssignToken(request: EmailPasswordAuthRequest) : AppUserDetails {
+    fun loginAndAssignToken(request: EmailPasswordAuthRequest): AppUserDetails {
 
 //        val user = userRepo.findUserByCredentialId(credential.ID!!)
 
         val authenticate = authenticationManager.authenticate(
             UsernamePasswordAuthenticationToken(
-                request.email,
+                "${request.email}:${CredentialProvider.EMAIL_PASSWORD}",
                 request.password
             )
         )
@@ -153,7 +170,7 @@ class AuthenticationService {
     }
 
 
-    fun switchAccount(request: SwitchAccountRequest) : AppUserDetails {
+    fun switchAccount(request: SwitchAccountRequest): AppUserDetails {
 
         val currentUserDetails = SecurityContextHolder.getContext().authentication.principal.let {
             print("switch request")
@@ -162,9 +179,9 @@ class AuthenticationService {
         } as AppUserDetails
         val user = currentUserDetails.user
         val account = getAccountById(request.accountID)
-        val accountsRoles = accountsRepo.findAccountRoleByUserIdAndAccountId(user.ID!!,account.ID!!)
+        val accountsRoles = accountsRepo.findAccountRoleByUserIdAndAccountId(user.ID!!, account.ID!!)
         val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
-        val userDetails = AppUserDetails(user,user.credentials.first(),account, listOf(accountsRoles), linkedAccounts)
+        val userDetails = AppUserDetails(user, user.credentials.first(), account, listOf(accountsRoles), linkedAccounts)
 
         SecurityContextHolder.getContext()
             .authentication = UsernamePasswordAuthenticationToken(
@@ -176,38 +193,165 @@ class AuthenticationService {
         return userDetails
     }
 
-    fun getDataFromAccount() : AppUserDetails{
+    fun getDataFromAccount(): AppUserDetails {
 
-//        val username = jwtTokenUtil.getUsernameFromToken(token)
-//        val accountId = jwtTokenUtil.getAccountFromToken(token)
-//
-//        val user = getUserByUserName(username)
-//        val account = getAccountById(accountId.toLong())
-//        val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
-//        return AppUserDetails(user,user.credentials.first(),account,linkedAccounts)
-
-        return SecurityContextHolder.getContext().authentication.principal as AppUserDetails
+        return getLoggedInUserDetails()
 
     }
 
-    fun getToken(appUser : AppUserDetails) = jwtTokenUtil.generateToken(appUser)
+    fun getToken(appUser: AppUserDetails) = jwtTokenUtil.generateToken(appUser)
 
-    fun getUserById(userId: Long):UserModel{
+    fun getUserById(userId: Long): UserModel {
         val userRef = userRepo.findById(userId)
         if (!userRef.isPresent) throw UserNotFound("user not found")
         return userRef.get()
     }
 
-    fun getUserByUserName(username : String) : UserModel{
+    fun getUserByUserName(username: String): UserModel {
         val userRef = userRepo.findByUserName(username)
         if (!userRef.isPresent) throw UserNotFound("user not found")
         return userRef.get()
     }
 
-    fun getAccountById(accountID: Long): Account{
+    fun getAccountById(accountID: Long): Account {
         val accountRef = accountsRepo.findById(accountID)
         if (!accountRef.isPresent) throw AccountNotFound("account not found")
         return accountRef.get()
+    }
+
+    /**
+     * Use Google Outh to create user account and login
+     * if user exists with email and password log then in
+     */
+
+    fun signInWithGoogle(googleToken: String, providerId: String = ""): AppUserDetails {
+        println("google login")
+        if (!providerId.isEmpty()) {
+            println("provider id available")
+            val credentialRef = credentialsRepo.findByProviderIdAndActiveAndProvider(providerId)
+            if (credentialRef.isPresent) {
+                val credential = credentialRef.get()
+                println(credential)
+                val authenticate = authenticationManager.authenticate(
+                    UsernamePasswordAuthenticationToken(
+                        "${credential.identifier}:${credential.provider}",
+                        credential.accessToken
+                    )
+                )
+                return authenticate.principal as AppUserDetails
+
+            }
+        }
+
+
+        var userModel = GoogleAuthUtil.googleAuth(googleToken, providerId, passwordEncoder)
+        val credentials = credentialsRepo.findByIdentifier(userModel.credentials.first().identifier)
+
+        // user exists
+        // ask user to link by entering their password
+        if (credentials.isNotEmpty()) {
+
+            val googleCredentials = credentials.filter { it.provider == CredentialProvider.GOOGLE }
+            if (googleCredentials.isNotEmpty()) {
+                // account exisits return account
+                userModel = userRepo.findUserByCredentialId(googleCredentials.first().ID!!)
+                val accountRef = accountsRepo.findByTypeAndOwnerId(AccountType.DEFAULT, userModel.ID!!)
+                if (!accountRef.isPresent) throw AccountNotFound("account not found")
+
+                val authenticate = authenticationManager.authenticate(
+                    with(googleCredentials[0]) {
+                        UsernamePasswordAuthenticationToken(
+                            "$identifier:${CredentialProvider.GOOGLE}",
+                            accessToken
+                        )
+                    }
+                )
+
+                return authenticate.principal as AppUserDetails
+
+
+            }
+
+            val emailCredentials = credentials.filter { it.provider == CredentialProvider.EMAIL_PASSWORD }
+            if (emailCredentials.isNotEmpty()) with(credentials.first()) {
+                throw UserExistsException(
+                    "user with email : $identifier",
+                    accessToken
+                )
+            }
+        }
+
+        // user does not exist
+        var account = Account(
+            owner = userModel
+        )
+
+        account = accountsRepo.save(account)
+        val role = UserAccountRoles(
+            role = Roles.OWNER,
+            userModel = account.owner!!
+        )
+        account.accountUsers.add(role)
+        account = accountsRepo.save(account)
+        val authenticate = authenticationManager.authenticate(
+            with(userModel.credentials.first()) {
+                UsernamePasswordAuthenticationToken(
+                    "$identifier:${CredentialProvider.GOOGLE}",
+                    accessToken
+                )
+            }
+        )
+
+        return authenticate.principal as AppUserDetails
+    }
+
+    fun linkWithGoogle(googleToken: String, providerId: String = ""): UserModel {
+        val credentialRef = credentialsRepo.findByProviderIdAndActiveAndProvider(providerId)
+        if (credentialRef.isPresent) throw CredentialsException("already linked with a google account")
+        val userModel = GoogleAuthUtil.googleAuth(googleToken, providerId, passwordEncoder)
+        val user = getLoggedInUserDetails().user
+
+        val credential = credentialsRepo.save(userModel.credentials[0])
+        user.credentials.add(credential)
+        return userRepo.save(user)
+    }
+
+    fun unlinkCredential(credentialId: Long): AppUserDetails {
+
+        val userDetails = getLoggedInUserDetails()
+
+        if (userDetails.credential.ID == credentialId) throw CredentialsException("You cannot unlink this credential please log out and use another credential")
+        val credentialToDelete = userDetails.user.credentials.firstOrNull { it.ID == credentialId }
+
+        credentialsRepo.delete(
+            credentialToDelete
+                ?: throw CredentialsException("You cannot unlink this credential please log out and use another credential")
+        )
+
+        val authenticate = authenticationManager.authenticate(
+            with(userDetails.credential) {
+                UsernamePasswordAuthenticationToken(
+                    "$identifier:${provider}",
+                    when (provider) {
+                        CredentialProvider.EMAIL_PASSWORD -> secret
+                        else -> accessToken
+                    }
+                )
+            }
+
+        )
+
+        return authenticate.principal as AppUserDetails
+
+    }
+
+
+    fun refreshToken() {
+
+    }
+
+    fun logout() {
+
     }
 
 
@@ -221,6 +365,12 @@ class AuthenticationService {
 data class EmailPasswordAuthRequest(
     var email: String,
     var password: String
+)
+
+data class GoogleAuthRequest(
+    val serverCode: String,
+    val googleId: String,
+    val authKey: String
 )
 
 data class APIAuthRequest(
@@ -241,13 +391,21 @@ data class AssignAccountRequest(
 )
 
 data class LinkAccountRequest(
-    val roleOrdinal: Int,
+    val roleOrdinal: Int = 0,
     val userIdToLink: Long,
-    val accountID: Long
+    val accountID: Long? = null
 ) {
     val role: Roles get() = Roles.values()[roleOrdinal]
 }
 
 data class SwitchAccountRequest(
+    val accountID: Long
+)
+
+data class UnlinkCredentialRequest(
+    val credentialId: Long
+)
+
+data class UnlinkAccountRequest(
     val accountID: Long
 )

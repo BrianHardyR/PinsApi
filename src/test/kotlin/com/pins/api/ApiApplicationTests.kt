@@ -1,5 +1,6 @@
 package com.pins.api
 
+import com.pins.api.utils.clean
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -25,6 +26,14 @@ class ApiApplicationTests {
 
 	}
 
+
+	@Test
+	fun cleanTest(){
+		val text = "Brian Elias ?"
+		val cleaned = text.clean()
+		println(cleaned)
+		assert(cleaned == "brianelias")
+	}
 
 
 }

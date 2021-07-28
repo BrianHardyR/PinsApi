@@ -30,10 +30,13 @@ dependencies {
 	implementation ("io.jsonwebtoken:jjwt-api:0.11.2")
 	runtimeOnly ("io.jsonwebtoken:jjwt-impl:0.11.2")
 	// Uncomment the next line if you want to use RSASSA-PSS (PS256, PS384, PS512) algorithms:
-//	runtimeOnly("org.bouncycastle:bcprov-jdk15on:1.60")
+	//runtimeOnly("org.bouncycastle:bcprov-jdk15on:1.60")
 	runtimeOnly("io.jsonwebtoken:jjwt-gson:0.11.2") // or 'io.jsonwebtoken:jjwt-jakson:0.11.2' for gson
 
+	implementation ("com.google.api-client:google-api-client:1.31.5")
 
+	// compile group: 'com.google.http-client', name: 'google-http-client-jackson2', version: '1.22.0'
+	implementation ("com.google.http-client:google-http-client-jackson2:1.22.0")
 
 //	neo4j dependancy
 
