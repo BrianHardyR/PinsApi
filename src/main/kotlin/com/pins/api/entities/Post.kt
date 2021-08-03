@@ -2,7 +2,10 @@ package com.pins.api.entities
 
 import com.pins.api.utils.now
 import com.pins.api.utils.toLong
-import org.springframework.data.neo4j.core.schema.*
+import org.springframework.data.neo4j.core.schema.GeneratedValue
+import org.springframework.data.neo4j.core.schema.Id
+import org.springframework.data.neo4j.core.schema.Node
+import org.springframework.data.neo4j.core.schema.Relationship
 
 /**
  * The user may post
@@ -31,20 +34,21 @@ data class Post(
     @Relationship(type = "POSTED_BY")
     var postedBy: UserModel,
     @Relationship(type = "COMMENTS")
-    val comments : ArrayList<Comments> = ArrayList(),
-    @Relationship(type = "TAGS")
-    val tags : ArrayList<Tag> = ArrayList()
+    val comments : ArrayList<Post> = ArrayList(),
+    val locations : ArrayList<Location> = ArrayList(),
+    val routes : ArrayList<Route> = ArrayList(),
+    val userMentions : ArrayList<UserMentions> = ArrayList(),
     ) {
     var updateAt: Long
         get() = now().toLong()
         set(value) {}
 }
 
-@RelationshipProperties
-data class Comments(
-    @Id @GeneratedValue
-    var ID: Long? = null,
-    val commentedOn: Post,
-    @TargetNode
-    val comment : Post
-)
+//@RelationshipProperties
+//data class Comments(
+//    @Id @GeneratedValue
+//    var ID: Long? = null,
+//    val commentedOn: Post,
+//    @TargetNode
+//    val comment : Post
+//)

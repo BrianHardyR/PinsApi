@@ -16,7 +16,7 @@ interface AccountsRepo : Neo4jRepository<Account, Long> {
 
     @Query("MATCH (u:User)-[r:ACCESSIBLE_BY]-(a:Account) WHERE ID(u) = \$userId RETURN a")
     fun findAccountsByUserId( userId : Long ):Collection<Account>
-//optional match (u:User)-[m]-(a:Account) where ID(u)=10 and ID(a)=9 and exists(m.role) return distinct m limit 1
+
     @Query("MATCH (u:User)-[r:ACCESSIBLE_BY]-(a:Account) WHERE ID(u) = \$userId and ID(a)= \$accountId RETURN a as account,r as accountRole")
     fun findAccountRoleByUserIdAndAccountId( userId : Long , accountId : Long):AccountAndUserRoles
 

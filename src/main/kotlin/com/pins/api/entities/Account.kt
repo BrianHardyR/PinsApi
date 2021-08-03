@@ -19,14 +19,14 @@ data class Account(
          * Other users apart from the owner who have access to the account
          */
 
-        @Relationship(type = "ACCESSIBLE_BY", direction = Relationship.Direction.INCOMING)
+        @Relationship(type = "ACCESSIBLE_BY", direction = Relationship.Direction.OUTGOING)
         var accountUsers : ArrayList<UserAccountRoles> = ArrayList(),
 
         /**
          * The account owner
          */
 
-        @Relationship(type = "OWNED_BY", direction = Relationship.Direction.INCOMING)
+        @Relationship(type = "OWNED_BY", direction = Relationship.Direction.OUTGOING)
         var owner : UserModel? = null
 )
 

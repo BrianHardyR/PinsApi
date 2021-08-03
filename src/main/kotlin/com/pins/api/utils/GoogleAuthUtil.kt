@@ -1,6 +1,9 @@
 package com.pins.api.utils
 
-import com.google.api.client.googleapis.auth.oauth2.*
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
+import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.pins.api.entities.Credential
@@ -56,12 +59,6 @@ object GoogleAuthUtil {
                 providerId = identifier,
                 thirdPartyId = payload["sub"].toString()
             )
-
-            val c = GoogleCredential().apply {
-                accessToken = tokenResponse.accessToken
-            }
-
-            c.expirationTimeMilliseconds
 
             return UserModel(
                 userName = payload.email.split("@")[0],

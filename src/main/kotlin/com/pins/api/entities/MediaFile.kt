@@ -18,5 +18,5 @@ data class MediaFile(
      */
     val caption: String,
     @Relationship(type = "TAGS")
-    val tags : ArrayList<Tag> = ArrayList()
+    val tags : ArrayList<ContentTag> = ArrayList()
 )

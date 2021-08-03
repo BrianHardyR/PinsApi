@@ -7,7 +7,7 @@ import org.springframework.data.neo4j.core.schema.TargetNode
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.GrantedAuthority
 
-@RelationshipProperties()
+@RelationshipProperties
 data class UserAccountRoles(
         @Id @GeneratedValue
         var ID: Long? = null,

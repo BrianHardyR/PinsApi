@@ -19,3 +19,5 @@ fun getLoggedInUserDetails() = SecurityContextHolder.getContext().authentication
 
 // String Extensions
 fun String.clean() = "[^A-Za-z0-9 ]".toRegex().replace(this,"").toLowerCase().replace(" ","")
+
+fun Number.format(digits: Int,decimal : Int = 0) = "%0${digits}.${decimal}f".format(this)

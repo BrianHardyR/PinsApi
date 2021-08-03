@@ -3,56 +3,60 @@ package com.pins.api.entities
 import com.pins.api.utils.clean
 import com.pins.api.utils.now
 import com.pins.api.utils.toLong
-import org.springframework.data.neo4j.core.schema.GeneratedValue
-import org.springframework.data.neo4j.core.schema.Id
-import org.springframework.data.neo4j.core.schema.Node
-import org.springframework.data.neo4j.core.schema.Relationship
+import org.springframework.data.neo4j.core.schema.*
 
 /**
  * Store meta data for content
  */
 
 @Node("Tag")
-open class Tag(
+class Tags():ContentTag()
+
+open class ContentTag(
+    @Id @GeneratedValue
+    var ID : Long? = null,
     var type: TAG_TYPES? = null,
     var name: String? = null,
+    @Relationship(value = "CREATED_BY")
     var createdBy : UserModel? = null,
     var createdAt : Long = now().toLong()
 ) {
-    var normalizedName: String?
-        get() = name?.clean()
-        set(value) {}
+    val normalizedName: String
+        get() = name?.clean() ?: ""
+
 }
 
-@Node("Location")
+
+@RelationshipProperties
 data class Location(
-    @Id @GeneratedValue
-    var ID : Long? = null,
+    @TargetNode
     var coords : Coordinates,
-):Tag()
+):ContentTag()
 
 @Node("Route")
 data class Route(
-    @Id @GeneratedValue
-    var ID : Long? = null,
+    @Relationship(value = "ROUTE_FROM")
     var from : Coordinates,
-    var to : Coordinates
-):Tag()
+    @Relationship(value = "ROUTE_TO")
+    var to : Coordinates,
+    val routeKey : Long = "${from.ID}${to.ID}".toLong()
+):ContentTag()
 
+@RelationshipProperties
 data class UserMentions(
-    @Id @GeneratedValue
-    var ID : Long? = null,
-    @Relationship("MENTION")
-    val userModel: UserModel
-):Tag()
+    @TargetNode
+    var userModel: UserModel
+):ContentTag()
 
 @Node("Coordinates")
 data class Coordinates(
-    val lat : Long,
-    val long : Long
+    val lat : Double,
+    val long : Double,
+    @Id
+    var ID : Long? = ("$lat".replace(".","")+"$long".replace(".","")).toLong(),
 )
 
 
 enum class TAG_TYPES {
-    Location, Route, Mentions, Currency
+    Location, Route, Mentions, Currency, Hashtags
 }

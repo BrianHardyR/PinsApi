@@ -87,7 +87,7 @@ class AuthenticationService {
             accountUsers.add(
                 UserAccountRoles(
                     role = Roles.OWNER,
-                    userModel = user
+                    userModel = user,
                 )
             )
         }
@@ -124,13 +124,15 @@ class AuthenticationService {
             account.accountUsers.firstOrNull { userAccountRoles -> userAccountRoles.userModel.ID == user.ID && userAccountRoles.role == request.role }
         if (accountRoleExists != null) throw AccountRoleExists("user already has a role")
 
-        val userAccountRoles = UserAccountRoles(
-            role = request.role,
-            userModel = user
-        )
+
 
         return accountsRepo.save(account.apply {
-            accountUsers.add(userAccountRoles)
+            accountUsers.add(
+                UserAccountRoles(
+                    role = request.role,
+                    userModel = user
+                )
+            )
         })
 
     }

@@ -1,6 +1,5 @@
 package com.pins.api.security
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.pins.api.entities.*
 import com.pins.api.exceptions.UserNotFound
 import com.pins.api.repo.AccountAndUserRoles
@@ -23,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.web.filter.CorsFilter
+import java.io.Serializable
 import javax.security.auth.login.CredentialException
 import javax.servlet.http.HttpServletResponse
 
@@ -53,8 +53,6 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
         auth?.userDetailsService(
             object : UserDetailsService {
                 override fun loadUserByUsername(usernameProvider: String?): UserDetails {
-
-
 
                     val parts = usernameProvider?.split(':') ?: throw throw CredentialException("User not found")
 
@@ -110,6 +108,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             ?.antMatchers("/auth/login")?.permitAll()
             ?.antMatchers("/auth/googleLogin")?.permitAll()
             ?.antMatchers("/auth/register")?.permitAll()
+            ?.antMatchers("/stream/**")?.permitAll()
             ?.anyRequest()?.authenticated()
     }
 
@@ -132,7 +131,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     }
 }
 
-@JsonIgnoreProperties("accounts","credential", "password")
+//@JsonIgnoreProperties("accounts","credential", "password")
 class AppUserDetails(
     val user: UserModel,
     val credential: Credential,
@@ -140,7 +139,7 @@ class AppUserDetails(
     private val accounts: Collection<AccountAndUserRoles>,
     val linkedAccounts: Collection<Account>,
     val credentials : List<Credential> = user.credentials
-) : UserDetails {
+) : UserDetails, Serializable {
 
     override fun getAuthorities(): MutableCollection<out GrantedAuthority> =
         ArrayList(accounts.map { it.relationship() })

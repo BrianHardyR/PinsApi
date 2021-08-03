@@ -4,11 +4,15 @@ package com.pins.api.services
 import com.pins.api.entities.AccountType
 import com.pins.api.entities.Roles
 import com.pins.api.utils.GoogleAuthUtil
+import com.pins.api.utils.getLoggedInUserDetails
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.security.test.context.support.WithUserDetails
 
 @SpringBootTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthenticationServiceTests {
 
     @Autowired
@@ -16,10 +20,11 @@ class AuthenticationServiceTests {
 
     val authCode = "4/0AX4XfWisCASHhn8VoP8x6iRrztUp9AGYokJhO5UnDamhqO4KEvLw-_FhgoNf6RNLSL7LXw"
 
-    val refreshToken = "1//030TD2T5TNMvECgYIARAAGAMSNwF-L9IromQz3F-82xlGC1qAglzhvnSwTF-vTNa4HN6eU3YD7jv2U6pHuTNGzWEskNlHE-nh_Mw"
+    val refreshToken =
+        "1//030TD2T5TNMvECgYIARAAGAMSNwF-L9IromQz3F-82xlGC1qAglzhvnSwTF-vTNa4HN6eU3YD7jv2U6pHuTNGzWEskNlHE-nh_Mw"
 
     @Test
-    fun loginAndAssignTokenTest(){
+    fun loginAndAssignTokenTest() {
         val emailPasswordAuthRequest = EmailPasswordAuthRequest(email = "test3@email.com", password = "password")
         val token = authenticationService.loginAndAssignToken(emailPasswordAuthRequest)
         println("Token $token")
@@ -28,13 +33,13 @@ class AuthenticationServiceTests {
 
 
     @Test
-    fun createAccountTest(){
+    fun createAccountTest() {
         val creationRequest = AccountCreationRequest(
-            userName = "testUser3",
-            name = "First",
-            otherNames = listOf("Second","Third"),
+            userName = "testUser5",
+            name = "SOME",
+            otherNames = listOf("Second", "Third"),
             credential = EmailPasswordAuthRequest(
-                email = "test3@email.com",
+                email = "test5@email.com",
                 password = "password"
             )
         )
@@ -45,7 +50,7 @@ class AuthenticationServiceTests {
     }
 
     @Test
-    fun assignUserToAccountTest(){
+    fun assignUserToAccountTest() {
         val assignRequest = AssignAccountRequest(
             userId = 7,
             type = AccountType.DEVELOPER
@@ -56,7 +61,7 @@ class AuthenticationServiceTests {
     }
 
     @Test
-    fun linkUserToAccountTest(){
+    fun linkUserToAccountTest() {
         val linkRequest = LinkAccountRequest(
             roleOrdinal = Roles.ASSISTANT.ordinal,
             userIdToLink = 2,
@@ -67,8 +72,8 @@ class AuthenticationServiceTests {
     }
 
     @Test
-    fun temp(){
-        val data = authenticationService.accountsRepo.findAccountsByUserId(7)
+    fun temp() {
+        val data = authenticationService.accountsRepo.findAccountsByUserId(2)
         println("Temp relationship")
         data.forEach {
             println("$=================\n${it}\n")
@@ -76,13 +81,21 @@ class AuthenticationServiceTests {
     }
 
     @Test
-    fun signInWithGoogleTest(){
+    fun signInWithGoogleTest() {
         authenticationService.signInWithGoogle(authCode)
     }
 
     @Test
-    fun refreshTokenTest(){
+    fun refreshTokenTest() {
         GoogleAuthUtil.refreshToken(refreshToken)
+    }
+
+    @Test
+    @WithUserDetails(userDetailsServiceBeanName = "getLogginUser",value = "test3@email.com:EMAIL_PASSWORD")
+    fun getDataFromAccountTest() {
+        val appUserDetails = getLoggedInUserDetails()
+        println(appUserDetails.user.userName)
+        assert(appUserDetails.user.userName == "testUser3")
     }
 
 }

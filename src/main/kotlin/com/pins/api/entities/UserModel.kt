@@ -21,6 +21,6 @@ data class UserModel(
         val name : String,
         val otherNames: List<String>,
         val profileImage : String = "",
-        @Relationship( type = "AUTHENTICATES_WITH")
+        @Relationship( type = "AUTHENTICATES_WITH", direction = Relationship.Direction.INCOMING)
         val credentials : ArrayList<Credential> = ArrayList()
 )
