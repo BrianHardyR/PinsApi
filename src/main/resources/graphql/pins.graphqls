@@ -1,6 +1,0 @@
-#pins schema representing location
-type Pins{
-    lat : Float
-    lon : Float
-    content : [Content]
-}

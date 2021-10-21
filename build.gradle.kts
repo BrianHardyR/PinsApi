@@ -16,20 +16,21 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-neo4j")
+	implementation("org.springframework.boot:spring-boot-starter-tomcat")
+	implementation("org.springframework.boot:spring-boot-starter-data-neo4j:2.5.5")
+	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	implementation ("com.graphql-java-kickstart:graphql-spring-boot-starter:11.0.0")
-	runtimeOnly ("com.graphql-java-kickstart:playground-spring-boot-starter:11.0.0")
-	runtimeOnly ("com.graphql-java-kickstart:voyager-spring-boot-starter:11.0.0")
+	implementation("org.springframework:spring-webflux")
+	testImplementation("org.springframework.boot:spring-boot-starter-test:2.5.5")
 
 //	neo4j dependancy
 
-	testImplementation("io.projectreactor:reactor-test")
-	testImplementation("org.testcontainers:junit-jupiter:1.15.3")
-	testImplementation("org.testcontainers:neo4j:1.15.3")
+	testImplementation("io.projectreactor:reactor-test:3.4.11")
+	testImplementation("org.testcontainers:junit-jupiter:1.16.0")
+	testImplementation("org.testcontainers:neo4j:1.16.0")
 
+	implementation("io.jsonwebtoken:jjwt:0.9.0")
 
 }
 

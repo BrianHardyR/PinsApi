@@ -8,7 +8,4 @@ import java.util.concurrent.Executors
 @Component
 class GlobalBeans{
 
-
-    @Bean
-    fun getExecutors() = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
 }
