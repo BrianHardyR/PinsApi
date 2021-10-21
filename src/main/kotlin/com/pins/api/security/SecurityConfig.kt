@@ -33,9 +33,9 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     @Autowired
     lateinit var jwtTokenFilter: JwtTokenFilter
 
-    override fun configure(http: HttpSecurity) {
+    override fun configure(http: HttpSecurity?) {
         println("Configure HttpSecurity")
-
+        http ?: return
         http.cors().and().csrf().disable().sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
             .exceptionHandling()
@@ -49,7 +49,8 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     }
 
 
-    override fun configure(auth: AuthenticationManagerBuilder) {
+    override fun configure(auth: AuthenticationManagerBuilder?) {
+        auth ?: return
         auth.userDetailsService(authService)
     }
 
