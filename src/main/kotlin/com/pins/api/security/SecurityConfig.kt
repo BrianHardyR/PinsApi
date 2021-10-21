@@ -35,17 +35,24 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity?) {
         println("Configure HttpSecurity")
-        http ?: return
-        http.cors().and().csrf().disable().sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-            .exceptionHandling()
-            .authenticationEntryPoint { _, response, authException -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED,authException.message) }
-            .and()
-            .authorizeRequests()
-            .antMatchers("/auth/**").permitAll()
-            .anyRequest().authenticated().and()
-            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter::class.java)
-
+        http?.cors()
+            ?.and()
+            ?.csrf()?.disable()
+            ?.sessionManagement()?.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            ?.and()?.exceptionHandling()?.authenticationEntryPoint { request, response, authException ->
+                response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    authException.message
+                )
+            }?.and()
+            ?.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter::class.java)
+            ?.authorizeRequests()
+            ?.antMatchers("/")?.permitAll()
+            ?.antMatchers("/auth/login")?.permitAll()
+            ?.antMatchers("/auth/googleLogin")?.permitAll()
+            ?.antMatchers("/auth/register")?.permitAll()
+            ?.antMatchers("/stream/**")?.permitAll()
+            ?.anyRequest()?.authenticated()
     }
 
 
