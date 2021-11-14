@@ -1,11 +1,12 @@
 package com.pins.api.security
 
-import com.pins.api.entities.auth.Account
-import com.pins.api.entities.auth.AccountUser
 import com.pins.api.entities.auth.LinkType
+import com.pins.api.entities.auth.PinUserDetails
 import com.pins.api.exceptions.AuthException
+import com.pins.api.exceptions.UserNotFound
 import com.pins.api.repository.AccountRepository
 import com.pins.api.repository.AccountUserRepository
+import com.pins.api.repository.AuthProviderRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -25,6 +26,8 @@ class JwtTokenFilter : OncePerRequestFilter() {
     lateinit var accountRepository: AccountRepository
     @Autowired
     lateinit var accountUserRepository: AccountUserRepository
+    @Autowired
+    lateinit var authProviderRepository: AuthProviderRepository
 
     @Autowired
     lateinit var jwtTokenUtil: JwtTokenUtil
@@ -67,7 +70,12 @@ class JwtTokenFilter : OncePerRequestFilter() {
         val account = accountRef.get()
         val roles = mutableListOf<GrantedAuthority>()
 
-        if (account.owner.id == userId) roles.add(LinkType.Owner)
+        val authProviderId = jwtTokenUtil.getAuthProviderFromToken(token).toLong()
+        val authProviderRef = authProviderRepository.findById(authProviderId)
+
+
+
+        if (account.owner?.id == userId) roles.add(LinkType.Owner)
 
         LinkType.values().forEach { link ->
             val linked = account.linkedUsers.firstOrNull { linked ->
@@ -76,8 +84,14 @@ class JwtTokenFilter : OncePerRequestFilter() {
             linked?.let { roles.add(link) } ?: return@forEach
         }
 
+
+        if (roles.isEmpty()) throw AuthException()
+
+        println("ROLES")
+        println(roles.map { it.authority })
+
         val authentication = UsernamePasswordAuthenticationToken(
-            AuthPrinciple(userRef.get(),account),
+            PinUserDetails(userRef.get(),authProviderRef.get(),account,accountRepository.getLinkedAccountsByUserId(userRef.get().id ?: throw UserNotFound())),
             null,
             roles
         )
@@ -87,8 +101,3 @@ class JwtTokenFilter : OncePerRequestFilter() {
 
     }
 }
-
-data class AuthPrinciple(
-    val user : AccountUser,
-    val account : Account
-)

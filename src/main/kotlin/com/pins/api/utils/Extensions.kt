@@ -1,6 +1,6 @@
 package com.pins.api.utils
 
-import com.pins.api.security.AuthPrinciple
+import com.pins.api.entities.auth.PinUserDetails
 import org.springframework.security.core.context.SecurityContextHolder
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -37,5 +37,6 @@ fun Long.round(places: Int): Double {
     return bd.toDouble()
 }
 
-fun getAccount() = (SecurityContextHolder.getContext().authentication.principal as AuthPrinciple).account
-fun getUser() = (SecurityContextHolder.getContext().authentication.principal as AuthPrinciple).user
+fun getAccount() = (SecurityContextHolder.getContext().authentication.principal as PinUserDetails).account
+fun getUser() = (SecurityContextHolder.getContext().authentication.principal as PinUserDetails).accountUser
+fun getPrincipal() = (SecurityContextHolder.getContext().authentication.principal) as PinUserDetails

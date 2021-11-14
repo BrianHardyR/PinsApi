@@ -11,7 +11,7 @@ data class Account(
     @GeneratedValue
     var id: Long? = null,
     @Relationship("OWNER")
-    var owner: AccountUser,
+    var owner: AccountUser? = null,
     @Relationship("LINKED_USERS")
     val linkedUsers: MutableSet<LinkedUser> = HashSet()
 ) :Entity() {

@@ -7,6 +7,8 @@ import com.pins.api.exceptions.InvalidRequest
 import com.pins.api.repository.AccountRepository
 import com.pins.api.repository.AccountUserRepository
 import com.pins.api.request_response.account.LinkRequest
+import com.pins.api.security.JwtTokenUtil
+import com.pins.api.utils.getPrincipal
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,6 +20,8 @@ class AccountService {
     @Autowired lateinit var accountRepository: AccountRepository
     @Autowired lateinit var accountUserRepository: AccountUserRepository
     @Autowired lateinit var userService: UserService
+    @Autowired lateinit var authService: AuthService
+    @Autowired lateinit var jwtTokenUtil: JwtTokenUtil
 
     fun getAccountByOwner(ownerId : Long):Optional<Account>{
         val accountRef = accountRepository.getAccountIdByOwner(ownerId)
@@ -58,6 +62,23 @@ class AccountService {
         if (request.valid(false)) return throw InvalidRequest()
         accountRepository.deleteLinkedUserFromAccount(request.userId,request.accountId)
         return getAccount(request.accountId)
+    }
+
+    fun switchAccount(accountId: Long) : Map<String,*> {
+
+        val principal = getPrincipal()
+        val accountRef = accountRepository.findById(accountId)
+        println("Getting link id")
+        println("$accountId => ${principal.accountUser.id}")
+        val linkIdRef = accountRepository.getLinkIdByUserAndAccount(accountId,principal.accountUser.id ?: throw AccountNotFound())
+        if (!linkIdRef.isPresent || !accountRef.isPresent) throw AccountNotFound()
+
+        return mapOf(
+            "token" to jwtTokenUtil.generateToken(principal.accountUser,accountRef.get(),principal.authProvider),
+            "user" to principal.accountUser,
+            "account" to principal.account
+        )
+
     }
 
 

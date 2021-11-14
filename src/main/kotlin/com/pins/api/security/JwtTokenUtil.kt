@@ -2,6 +2,7 @@ package com.pins.api.security
 
 import com.pins.api.entities.auth.Account
 import com.pins.api.entities.auth.AccountUser
+import com.pins.api.entities.auth.AuthProvider
 import com.pins.api.exceptions.AccountNotFound
 import com.pins.api.exceptions.AuthException
 import io.jsonwebtoken.Claims
@@ -29,6 +30,10 @@ class JwtTokenUtil : Serializable {
         return getAllClaimsFromToken(token).get("accessing",String::class.java)
     }
 
+    fun getAuthProviderFromToken(token: String?):String{
+        return getAllClaimsFromToken(token).get("provider",String::class.java)
+    }
+
     fun getUsernameFromToken(token: String?): String {
         return getClaimFromToken(token, Claims::getSubject)
     }
@@ -43,10 +48,15 @@ class JwtTokenUtil : Serializable {
     }
 
     private fun getAllClaimsFromToken(token: String?): Claims {
-        return Jwts.parser()
+        return Jwts.parserBuilder()
             .setSigningKey(SIGNING_KEY)
-            .parseClaimsJws(token)
-            .getBody()
+            .build()
+            .parseClaimsJws(token).body
+
+//        return Jwts.parser()
+//            .setSigningKey(SIGNING_KEY)
+//            .parseClaimsJws(token)
+//            .getBody()
     }
 
     private fun isTokenExpired(token: String?): Boolean {
@@ -54,15 +64,16 @@ class JwtTokenUtil : Serializable {
         return expiration.before(Date())
     }
 
-    fun generateToken(user: AccountUser, account: Account): String {
-        return doGenerateToken(user.id ?: throw AuthException(), account.id?.toString() ?: throw AccountNotFound())
+    fun generateToken(user: AccountUser, account: Account, authProvider: AuthProvider): String {
+        return doGenerateToken(user.id ?: throw AuthException(), account.id?.toString() ?: throw AccountNotFound(), authProvider.id ?: throw AuthException())
     }
 
-    private fun doGenerateToken(userIdentifier: Long, accountIdentifier: String): String {
+    private fun doGenerateToken(userIdentifier: Long, accountIdentifier: String, authProvider : Long): String {
         val claims: Claims = Jwts.claims(
             mapOf(
                 "accessor" to "$userIdentifier",
-                "accessing" to accountIdentifier
+                "accessing" to accountIdentifier,
+                "provider" to "$authProvider"
             )
         )
         claims.subject ="Pins Token"

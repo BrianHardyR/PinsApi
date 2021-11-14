@@ -88,16 +88,15 @@ class AuthService : UserDetailsService {
         println("Getting authentication principal ${principal.toString()}")
         // account for owner
         return mapOf(
-            "token" to jwtTokenUtil.generateToken(principal.accountUser,principal.account),
+            "token" to jwtTokenUtil.generateToken(principal.accountUser,principal.account, principal.authProvider),
             "user" to principal.accountUser,
-            "account" to principal.account
+            "account" to principal.account,
+            "linkedAccounts" to principal.linkedAccounts
         )
 
     }
 
     override fun loadUserByUsername(userIdStr: String?): UserDetails {
-
-
 
         userIdStr ?: throw AuthException()
 
@@ -118,7 +117,10 @@ class AuthService : UserDetailsService {
         // get accounts that belong to the user
         if (!accountRef.isPresent) throw AccountNotFound()
         val account = accountRef.get()
-        return PinUserDetails(accountUser,authProvider,account)
+
+        val linkedAccounts = accountRepository.getLinkedAccountsByUserId(accountUser.id)
+
+        return PinUserDetails(accountUser,authProvider,account,linkedAccounts)
 
     }
 

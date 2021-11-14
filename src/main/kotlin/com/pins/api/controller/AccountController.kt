@@ -2,6 +2,7 @@ package com.pins.api.controller
 
 import com.pins.api.repository.AccountRepository
 import com.pins.api.request_response.account.LinkRequest
+import com.pins.api.request_response.account.SwitchAccountRequest
 import com.pins.api.service.AccountService
 import com.pins.api.utils.getAccount
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,5 +35,8 @@ class AccountController {
 
     @GetMapping("/get/{id}/owner")
     fun getAccountForOwner(@PathVariable("id") id : Long) = ResponseEntity.ok(accountService.getAccountByOwner(id))
+
+    @PostMapping("/switch")
+    fun switchAccount(@RequestBody request : SwitchAccountRequest) = ResponseEntity.ok(accountService.switchAccount(request.accountId))
 
 }

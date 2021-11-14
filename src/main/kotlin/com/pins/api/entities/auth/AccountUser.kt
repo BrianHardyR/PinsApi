@@ -30,7 +30,8 @@ data class ContactInfo(
 data class PinUserDetails(
     val accountUser: AccountUser,
     val authProvider: AuthProvider,
-    val account: Account
+    val account: Account,
+    val linkedAccounts : List<Account> = emptyList(),
 ) : UserDetails {
     override fun getAuthorities(): List<out GrantedAuthority> {
         return listOf(LinkType.Owner)

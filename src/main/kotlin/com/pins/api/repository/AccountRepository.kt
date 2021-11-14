@@ -19,4 +19,7 @@ interface AccountRepository : Neo4jRepository<Account, Long> {
     @Query("match (a:Account)-[l:LINKED_USERS]-(u:User) where ID(a) = \$accountId AND ID(u) = \$userId detach delete l")
     fun deleteLinkedUserFromAccount(userId: Long, accountId: Long)
 
+    @Query("match (u:User)-[l:LINKED_USERS]-(a:Account) where ID(u)=\$userId return a")
+    fun getLinkedAccountsByUserId(userId: Long):List<Account>
+
 }

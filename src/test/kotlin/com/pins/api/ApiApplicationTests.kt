@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.context.support.WithUserDetails
 
 @SpringBootTest
 class ApiApplicationTests {
@@ -120,11 +120,18 @@ class ApiApplicationTests {
     }
 
     @Test
-    @WithMockUser(username = "test@email.com",password = "password")
+    @WithUserDetails(userDetailsServiceBeanName = "getAuthenticationService",value = "EmailAndPassword test@email.com")
     fun authTest(){
         val user = getUser()
         println("Authenticated user")
         println(user.userName)
+    }
+
+    @Test
+    fun getLinkedAccounts(){
+        val linkedAccounts = accountRepository.getLinkedAccountsByUserId(9)
+        println("Linked accounts")
+        println(linkedAccounts.map { it.id })
     }
 
 }
