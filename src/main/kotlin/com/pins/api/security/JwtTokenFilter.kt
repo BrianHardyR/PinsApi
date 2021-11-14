@@ -1,12 +1,15 @@
 package com.pins.api.security
 
-import com.pins.api.repo.AccountsRepo
-import com.pins.api.repo.UserRepo
-import com.pins.api.services.AuthenticationService
-import com.pins.api.utils.JwtTokenUtil
+import com.pins.api.entities.auth.Account
+import com.pins.api.entities.auth.AccountUser
+import com.pins.api.entities.auth.LinkType
+import com.pins.api.exceptions.AuthException
+import com.pins.api.repository.AccountRepository
+import com.pins.api.repository.AccountUserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
@@ -16,71 +19,76 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 @Component
-
-class JwtTokenFilter : OncePerRequestFilter(){
-
-    @Autowired
-    lateinit var userRepo: UserRepo
+class JwtTokenFilter : OncePerRequestFilter() {
 
     @Autowired
-    lateinit var accountsRepo: AccountsRepo
+    lateinit var accountRepository: AccountRepository
+    @Autowired
+    lateinit var accountUserRepository: AccountUserRepository
 
     @Autowired
     lateinit var jwtTokenUtil: JwtTokenUtil
 
-    @Autowired
-    lateinit var authService : AuthenticationService
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain
+    ) {
 
+        println("Jwt Filtering")
+        println(request.method+":"+request.servletPath)
 
-    override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
+        val header = request.getHeader(HttpHeaders.AUTHORIZATION)
 
-        println("do filter\n")
-        println(request)
-        println("\n==========================")
-        print(response)
-        println("\n==========================")
-        print(filterChain)
+        println(header)
 
-        var token = request.getHeader(HttpHeaders.AUTHORIZATION) ?: ""
-
-        print("\ntoken from header $token\n")
-
-        if (token.isEmpty() || !token.startsWith("Bearer ")){
-
+        if (header.isNullOrEmpty() || !header.startsWith("Bearer")){
+            println("No token from request")
             filterChain.doFilter(request, response)
             return
-
         }
 
-        token = token.split(" ")[1].trim()
+        val token = header.split(" ")[1].trim()
 
+        println("Token : $token")
 
-        val user = authService.getUserByUserName(jwtTokenUtil.getUsernameFromToken(token))
+        val userId = jwtTokenUtil.getUserIdFromToken(token).toLong()
+        val userRef = accountUserRepository.findById(userId)
 
-        println("\nuser found\n")
+        if (!userRef.isPresent) throw AuthException()
 
-        val account = authService.getAccountById(jwtTokenUtil.getAccountFromToken(token).toLong())
+        val valid = jwtTokenUtil.validateToken(token,userRef.get())
+        if (!valid) throw AuthException()
 
-        println("\naccount found\n")
+        val accountId = jwtTokenUtil.getAccountFromToken(token).toLong()
+        val accountRef = accountRepository.findById(accountId)
+        if (!accountRef.isPresent) throw AuthException()
 
-        val accountsRoles = accountsRepo.findAccountRoleByUserIdAndAccountId(user.ID!!,account.ID!!)
-        val linkedAccounts = accountsRepo.findAccountsByUserId(user.ID!!)
-        val appUserDetails = AppUserDetails(user, user.credentials.first(), account, listOf(accountsRoles), linkedAccounts,user.credentials)
+        val account = accountRef.get()
+        val roles = mutableListOf<GrantedAuthority>()
+
+        if (account.owner.id == userId) roles.add(LinkType.Owner)
+
+        LinkType.values().forEach { link ->
+            val linked = account.linkedUsers.firstOrNull { linked ->
+                linked.linkType == link && linked.user.id == userId
+            }
+            linked?.let { roles.add(link) } ?: return@forEach
+        }
 
         val authentication = UsernamePasswordAuthenticationToken(
-            appUserDetails,
-            appUserDetails.credential,
-            appUserDetails.authorities
+            AuthPrinciple(userRef.get(),account),
+            null,
+            roles
         )
-
-        println("\n${appUserDetails.authorities}\n")
-
         authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-
         SecurityContextHolder.getContext().authentication = authentication
-
         filterChain.doFilter(request, response)
 
-        println("\nfilter done\n")
     }
 }
+
+data class AuthPrinciple(
+    val user : AccountUser,
+    val account : Account
+)

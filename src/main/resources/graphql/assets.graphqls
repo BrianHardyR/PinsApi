@@ -1,7 +1,0 @@
-# Asset schema representing images video gifs or other non textual companion content
-type Assets{
-    id : Float
-    url : String
-    description : String
-    content : Content
-}
