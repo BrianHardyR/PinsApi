@@ -39,7 +39,7 @@ class AccountService {
     fun linkUser(request : LinkRequest) : Account{
         if (!request.valid(true)) return throw InvalidRequest()
         println("linking started")
-        val account = getAccount(request.accountId)
+        val account = com.pins.api.utils.getAccount()
         // user to link to the account
         val user = userService.getUser(request.userId)
         // check that the user is not linked
@@ -60,8 +60,9 @@ class AccountService {
     @Transactional
     fun unlinkUser(request: LinkRequest) : Account{
         if (request.valid(false)) return throw InvalidRequest()
-        accountRepository.deleteLinkedUserFromAccount(request.userId,request.accountId)
-        return getAccount(request.accountId)
+        val account = com.pins.api.utils.getAccount()
+        accountRepository.deleteLinkedUserFromAccount(request.userId, account.id ?: throw AccountNotFound())
+        return getAccount(account.id ?: throw AccountNotFound())
     }
 
     fun switchAccount(accountId: Long) : Map<String,*> {
