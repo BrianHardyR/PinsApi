@@ -26,5 +26,5 @@ data class AuthProvider(
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@PreAuthorize("hasAuthority('OWNER')")
+@PreAuthorize("hasAuthority('Owner')")
 annotation class OWNER
