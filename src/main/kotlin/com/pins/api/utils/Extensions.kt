@@ -37,7 +37,7 @@ fun Long.round(places: Int): Double {
     return bd.toDouble()
 }
 
-fun <T> safe(onError: (()->T?)? = null , action : ()->T):T? =
+fun <T> safe(onError: (()->T)? = null , action : ()->T):T? =
     try {
         action()
     }catch (e:Exception){

@@ -5,10 +5,7 @@ import com.pins.api.service.FileModel
 import com.pins.api.service.FileService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
 @RestController
@@ -24,8 +21,26 @@ class FileController {
         @RequestParam("name") name : String? = null
     ):ResponseEntity<*> = ResponseEntity.ok(fileService.save(file, FileModel(name,type)))
 
-    fun get(){
+    @GetMapping("/get/{type}/{name}", produces = [
+        org.springframework.http.MediaType.IMAGE_JPEG_VALUE,
+        org.springframework.http.MediaType.IMAGE_PNG_VALUE,
+        org.springframework.http.MediaType.IMAGE_GIF_VALUE
 
+    ])
+    fun get(
+        @PathVariable("type") type: MediaType,
+        @PathVariable("name") name : String,
+        @RequestParam("scale") scale : Int? = null,
+        @RequestParam("height") height : Int? = null,
+        @RequestParam("width") width : Int? = null
+    ):ResponseEntity<*>{
+        val resource = if (scale != null) fileService.scale(type,name,scale)
+        else fileService.resize(type,name,height,width)
+
+        val file = fileService.get(resource)
+        print("Returning data")
+        return ResponseEntity.ok()
+            .body(file)
     }
 
 }

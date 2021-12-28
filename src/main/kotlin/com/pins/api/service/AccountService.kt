@@ -77,7 +77,7 @@ class AccountService {
         return mapOf(
             "token" to jwtTokenUtil.generateToken(principal.accountUser,accountRef.get(),principal.authProvider),
             "user" to principal.accountUser,
-            "account" to principal.account
+            "account" to accountRef.get()
         )
 
     }
