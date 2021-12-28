@@ -1,6 +1,6 @@
 package com.pins.api.controller
 
-import com.pins.api.entities.auth.OWNER
+import com.pins.api.entities.auth.Owner
 import com.pins.api.repository.AccountRepository
 import com.pins.api.request_response.account.LinkRequest
 import com.pins.api.request_response.account.SwitchAccountRequest
@@ -19,13 +19,13 @@ class AccountController {
     @Autowired lateinit var accountRepository: AccountRepository
 
     @PostMapping("/link")
-    @OWNER
+    @Owner
     fun linkUserToUser(@RequestBody request : LinkRequest) : ResponseEntity<*> {
         return ResponseEntity.ok(accountService.linkUser(request))
     }
 
     @PostMapping("/unlink")
-    @OWNER
+    @Owner
     fun unlinkUserToUser(@RequestBody request : LinkRequest) : ResponseEntity<*> {
         return ResponseEntity.ok(accountService.unlinkUser(request))
     }

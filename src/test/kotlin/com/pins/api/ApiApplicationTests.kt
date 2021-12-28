@@ -10,7 +10,7 @@ import com.pins.api.repository.AccountUserRepository
 import com.pins.api.repository.PostRepository
 import com.pins.api.service.LocationService
 import com.pins.api.utils.clean
-import com.pins.api.utils.getUser
+import com.pins.api.utils.getPrincipal
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -122,9 +122,9 @@ class ApiApplicationTests {
     @Test
     @WithUserDetails(userDetailsServiceBeanName = "getAuthenticationService",value = "EmailAndPassword test@email.com")
     fun authTest(){
-        val user = getUser()
+        val user = getPrincipal()
         println("Authenticated user")
-        println(user.userName)
+        println(user.roles)
     }
 
     @Test

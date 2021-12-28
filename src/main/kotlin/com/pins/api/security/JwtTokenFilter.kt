@@ -10,7 +10,6 @@ import com.pins.api.repository.AuthProviderRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
@@ -68,7 +67,7 @@ class JwtTokenFilter : OncePerRequestFilter() {
         if (!accountRef.isPresent) throw AuthException()
 
         val account = accountRef.get()
-        val roles = mutableListOf<GrantedAuthority>()
+        val roles = mutableListOf<LinkType>()
 
         val authProviderId = jwtTokenUtil.getAuthProviderFromToken(token).toLong()
         val authProviderRef = authProviderRepository.findById(authProviderId)
@@ -77,11 +76,8 @@ class JwtTokenFilter : OncePerRequestFilter() {
 
         if (account.owner?.id == userId) roles.add(LinkType.Owner)
 
-        LinkType.values().forEach { link ->
-            val linked = account.linkedUsers.firstOrNull { linked ->
-                linked.linkType == link && linked.user.id == userId
-            }
-            linked?.let { roles.add(link) } ?: return@forEach
+        accountUserRepository.getRoleByAccountAndUser(accountId, userId).run {
+            if (isPresent) roles.add(get())
         }
 
 
@@ -91,7 +87,7 @@ class JwtTokenFilter : OncePerRequestFilter() {
         println(roles.map { it.authority })
 
         val authentication = UsernamePasswordAuthenticationToken(
-            PinUserDetails(userRef.get(),authProviderRef.get(),account,accountRepository.getLinkedAccountsByUserId(userRef.get().id ?: throw UserNotFound())),
+            PinUserDetails(userRef.get(),authProviderRef.get(),account,accountRepository.getLinkedAccountsByUserId(userRef.get().id ?: throw UserNotFound()),roles.toList()),
             null,
             roles
         )

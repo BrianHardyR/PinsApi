@@ -37,6 +37,15 @@ fun Long.round(places: Int): Double {
     return bd.toDouble()
 }
 
+fun <T> safe(onError: (()->T?)? = null , action : ()->T):T? =
+    try {
+        action()
+    }catch (e:Exception){
+        e.printStackTrace()
+        print(e.message)
+        onError?.invoke()
+    }
+
 fun getAccount() = (SecurityContextHolder.getContext().authentication.principal as PinUserDetails).account
 fun getUser() = (SecurityContextHolder.getContext().authentication.principal as PinUserDetails).accountUser
 fun getPrincipal() = (SecurityContextHolder.getContext().authentication.principal) as PinUserDetails

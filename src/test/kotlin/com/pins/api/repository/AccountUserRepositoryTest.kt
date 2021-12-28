@@ -16,6 +16,8 @@ class AccountUserRepositoryTest {
 
         val role = accountUserRepository.getRoleByAccountAndUser(accountId, userId)
         assert(role.isPresent)
+        print(role.get())
+
     }
 
 }

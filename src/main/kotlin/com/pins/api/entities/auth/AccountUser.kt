@@ -32,9 +32,10 @@ data class PinUserDetails(
     val authProvider: AuthProvider,
     val account: Account,
     val linkedAccounts : List<Account> = emptyList(),
+    val roles : List<LinkType>
 ) : UserDetails {
     override fun getAuthorities(): List<out GrantedAuthority> {
-        return listOf(LinkType.Owner)
+        return roles
     }
 
     override fun getPassword(): String {

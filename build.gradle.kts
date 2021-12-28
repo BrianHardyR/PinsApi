@@ -47,6 +47,8 @@ dependencies {
 
 	implementation("org.springframework:spring-webflux:5.2.7.RELEASE")
 
+	implementation("jmagick:jmagick:6.6.9")
+
 }
 
 tasks.withType<KotlinCompile> {

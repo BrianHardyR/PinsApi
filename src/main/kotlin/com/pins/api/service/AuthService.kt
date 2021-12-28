@@ -96,6 +96,14 @@ class AuthService : UserDetailsService {
 
     }
 
+    fun getUserRole(account:Account, user : AccountUser) : List<LinkType>{
+        val roles = mutableListOf<LinkType>()
+        if (account.owner?.id == user.id) roles.add(LinkType.Owner)
+        val roleRef = accountUserRepository.getRoleByAccountAndUser(account.id ?: throw AccountNotFound(), user.id ?: throw UserNotFound())
+        if (roleRef.isPresent) roles.add(roleRef.get())
+        return roles
+    }
+
     override fun loadUserByUsername(userIdStr: String?): UserDetails {
 
         userIdStr ?: throw AuthException()
@@ -120,7 +128,9 @@ class AuthService : UserDetailsService {
 
         val linkedAccounts = accountRepository.getLinkedAccountsByUserId(accountUser.id)
 
-        return PinUserDetails(accountUser,authProvider,account,linkedAccounts)
+        val roles = getUserRole(account, accountUser)
+
+        return PinUserDetails(accountUser,authProvider,account,linkedAccounts, roles)
 
     }
 
