@@ -244,7 +244,7 @@ class FileService {
             }
             return validResolutions.toTypedArray()
         }else{
-            val validResolutions = resolutions.slice(0 .. index).map { validHeight ->
+            val validResolutions = resolutions.slice(0 until index).map { validHeight ->
                 var unroundedWidth = (width.toDouble() / height) * validHeight
                 val newWidth = getNextEvenNumber(unroundedWidth)
                 newWidth to validHeight
