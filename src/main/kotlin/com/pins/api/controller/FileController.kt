@@ -4,9 +4,11 @@ import com.pins.api.entities.content.MediaType
 import com.pins.api.service.FileModel
 import com.pins.api.service.FileService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/file")
@@ -40,6 +42,11 @@ class FileController {
         print("Returning data")
         return ResponseEntity.ok()
             .body(file)
+    }
+
+    @GetMapping("/get/Video/{name}")
+    fun getVideo(@PathVariable("name") name: String, @RequestParam("resolution") resolution : Int? = null) : Mono<Resource> {
+        return Mono.fromSupplier { fileService.getVideo(name, resolution) }
     }
 
 }

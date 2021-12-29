@@ -167,6 +167,22 @@ class FileService {
         return scaledPath
     }
 
+    fun getVideo(fileName:String, resolution : Int?):Resource{
+        val resource = if (resolution == null){
+            val originalPath = getUploadPath(MediaType.Video).resolve(fileName)
+            get(originalPath)
+        }else{
+            val extension = getExtension(fileName)
+            val trimmedFileName = fileName.replace(extension,"")
+            val scaledFileName = "${trimmedFileName}_${resolution}${extension}"
+
+            val scaledPath = getProcessedPath(MediaType.Video).resolve(scaledFileName)
+            get(scaledPath)
+        }
+
+        return resource
+    }
+
     private fun executeCommand(path: Path? = null, vararg command: String): Boolean {
         print("Executing command ${path?.toUri()}\n")
         val builder = ProcessBuilder().apply {
@@ -202,7 +218,7 @@ class FileService {
         print("createDifferentResolutionVideos ${resolutionsToProcess.joinToString(separator = ", ") { "$it" }}")
 
 
-        resolutionsToProcess.filterIndexed { index, _ -> index == 0 }.forEach {
+        resolutionsToProcess.forEach {
             // schedule background process for each resolution
             jobScheduler.enqueue { rescaleVideo(fileName,it) }
         }
