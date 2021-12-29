@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-//	implementation ("org.springframework.data:spring-data-neo4j:5.3.2.RELEASE")
+
 	implementation("org.springframework.boot:spring-boot-starter-data-neo4j")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
