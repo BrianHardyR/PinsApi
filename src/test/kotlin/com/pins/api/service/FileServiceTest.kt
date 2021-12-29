@@ -24,4 +24,26 @@ class FileServiceTest {
         assert(resource.exists())
     }
 
+    @Test
+    fun getNextEvenNumberTest(){
+        val result = fileService.getNextEvenNumber(335.66)
+        print("Result $result\n")
+        assert(result % 2 == 0)
+    }
+
+    @Test
+    fun getVideoResolutionTest(){
+        print("Test getVideoResolutionTest\n")
+        val path = fileService.getUploadPath(MediaType.Video)
+        val resolution = fileService.getVideoResolution(path,"Video_1640518345604.mp4")
+        val resolutionsToConvertTo = fileService.getResolutionsToConvertTo(resolution).joinToString { "$it" }
+        print("\nResult getVideoResolutionTest $resolution, $resolutionsToConvertTo \n")
+        assert(resolution.first > 0 && resolution.second > 0)
+    }
+
+    @Test
+    fun rescaleVideoTest(){
+        val success = fileService.createDifferentResolutionVideos("Video_1640518345604.mp4")
+    }
+
 }

@@ -25,5 +25,4 @@ class GlobalBeans{
 
     @Bean
     fun getAuthenticationService() = authService
-
 }

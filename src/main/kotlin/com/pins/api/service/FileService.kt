@@ -5,7 +5,8 @@ import com.pins.api.entities.content.MediaType
 import com.pins.api.exceptions.FileUploadError
 import com.pins.api.repository.MediaRepository
 import com.pins.api.utils.safe
-import magick.MagickImage
+import org.apache.commons.io.IOUtils
+import org.jobrunr.scheduling.JobScheduler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
@@ -14,10 +15,12 @@ import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.FileNotFoundException
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import kotlin.math.floor
 
 
 @Service
@@ -32,9 +35,11 @@ class FileService {
     @Autowired
     lateinit var mediaRepository: MediaRepository
 
-    val magickImage: MagickImage by lazy { MagickImage() }
+    @Autowired lateinit var jobScheduler: JobScheduler
 
-    private fun getUploadPath(type: MediaType): Path {
+    val resolutions = arrayOf(144, 240, 360, 480, 720, 1080)
+
+    fun getUploadPath(type: MediaType): Path {
         val path = Paths.get("$uploadPath/${type.name}")
         val folderExists = Files.exists(path)
         if (!folderExists) {
@@ -45,7 +50,7 @@ class FileService {
         return path
     }
 
-    private fun getProcessedPath(type: MediaType): Path {
+    fun getProcessedPath(type: MediaType): Path {
         val path = Paths.get("$processedPath/${type.name}")
         val folderExists: (Path) -> Boolean = { path_ ->
             Files.exists(path_)
@@ -82,6 +87,8 @@ class FileService {
             mediaRepository.save(media)
         } else {
             throw FileUploadError()
+        }.also {
+            if (model.type == MediaType.Video) createDifferentResolutionVideos(filePath)
         }
     }
 
@@ -160,17 +167,117 @@ class FileService {
         return scaledPath
     }
 
-    private fun executeCommand(path: Path, vararg command: String): Boolean {
-        print("Executing command ${path.toUri()}\n")
+    private fun executeCommand(path: Path? = null, vararg command: String): Boolean {
+        print("Executing command ${path?.toUri()}\n")
         val builder = ProcessBuilder().apply {
             command(*command)
-            directory(File(path.toUri()))
+            directory(File(path?.toUri() ?: Paths.get("./").toUri() ))
         }
-        builder.command()
+        print("Command to execute ${builder.command().joinToString(separator = " ") { "$it" }}")
         val process = builder.start()
         val exitCode = process.waitFor()
-        print("Command executed $exitCode ${builder.command()}")
+        print("Command executed $exitCode")
         return exitCode == 0
+    }
+
+    private fun executeCommandAndReturnResult(path: Path?, vararg command: String): String {
+        print("Executing command ${path?.toUri()}\n")
+        val builder = ProcessBuilder().apply {
+            command(*command)
+            directory(File(path?.toUri() ?: Paths.get("./").toUri() ))
+        }
+        print("Command to execute ${builder.command().joinToString(separator = " ") { "$it" }}")
+        val output = IOUtils.toString(builder.start().inputStream, StandardCharsets.UTF_8)
+        print("Command executed $output\n${builder.command()}")
+        return output.trim()
+    }
+
+    fun createDifferentResolutionVideos(fileName: String) {
+        val videoPath = getUploadPath(MediaType.Video)
+        val originalVideoPath = videoPath.resolve(fileName)
+
+        val resolution = getVideoResolution(videoPath,fileName)
+        val resolutionsToProcess = getResolutionsToConvertTo(resolution)
+
+        print("createDifferentResolutionVideos ${resolutionsToProcess.joinToString(separator = ", ") { "$it" }}")
+
+
+        resolutionsToProcess.forEach {
+            // schedule background process for each resolution
+            jobScheduler.enqueue { rescaleVideo(fileName,it) }
+        }
+
+    }
+
+    fun rescaleVideo(fileName: String, resolution : Pair<Int,Int>) : Boolean{
+        val (width,height) = resolution
+        print("\nrescaleVideo ${width}x${height}")
+        val extension = getExtension(fileName)
+        val fileName_ = fileName.replace(extension,"")
+        val newFileName = "${fileName_}_${resolution.second}${extension}"
+        val originalPath = getUploadPath(MediaType.Video).resolve(fileName)
+        val processedPath = getProcessedPath(MediaType.Video).resolve(newFileName)
+        if (resourceExists(processedPath)) return true
+        // ffmpeg -i 25.mp4 -vf scale 1080:-1 25_1080.mp4
+        val result = executeCommand(
+            null,
+            "ffmpeg",
+            "-i",
+            originalPath.toUri().path,
+            "-vf",
+            "scale=$width:$height",
+            processedPath.toUri().path
+        )
+        return result
+    }
+
+    fun getResolutionsToConvertTo(original : Pair<Int,Int>):Array<Pair<Int,Int>>{
+        val (width,height) = original
+        val index = resolutions.indexOf(original.second)
+        if (index == 0) {
+            return arrayOf(original)
+        } else if (index == -1){
+            val validResolutions = resolutions.filter { it < height }.map { validHeight ->
+                var unroundedWidth = (width.toDouble() / height) * validHeight
+                val newWidth = getNextEvenNumber(unroundedWidth)
+                newWidth to validHeight
+            }
+            return validResolutions.toTypedArray()
+        }else{
+            val validResolutions = resolutions.slice(0 .. index).map { validHeight ->
+                var unroundedWidth = (width.toDouble() / height) * validHeight
+                val newWidth = getNextEvenNumber(unroundedWidth)
+                newWidth to validHeight
+            }
+            return validResolutions.toTypedArray()
+        }
+    }
+
+    fun getVideoResolution(directory: Path, fileName: String): Pair<Int, Int> {
+        // ffprobe -v error -select_streams v -show_entries stream=width,height -of csv=p=0:s=x 25.mp4
+        val result = executeCommandAndReturnResult(
+            directory,
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=p=0:s=x",
+            fileName
+        )
+        return result.split("x", ignoreCase = true).let { rSplit ->
+            print("getVideoResolution $rSplit")
+            if (rSplit.size != 2) throw IllegalArgumentException()
+            rSplit[0].toInt() to rSplit[1].toInt()
+        }
+    }
+
+    fun getNextEvenNumber(number: Double): Int {
+        val round = floor(number / 2) * 2
+        return round.toInt()
     }
 
 }

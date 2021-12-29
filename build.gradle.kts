@@ -25,6 +25,8 @@ dependencies {
 	runtimeOnly ("com.graphql-java-kickstart:playground-spring-boot-starter:11.0.0")
 	runtimeOnly ("com.graphql-java-kickstart:voyager-spring-boot-starter:11.0.0")
 
+	implementation ("org.jobrunr:jobrunr-spring-boot-starter:4.0.5")
+
 	implementation ("org.springframework.boot:spring-boot-starter-security")
 	testImplementation ("org.springframework.security:spring-security-test")
 
@@ -45,10 +47,11 @@ dependencies {
 	testImplementation("org.testcontainers:junit-jupiter:1.15.3")
 	testImplementation("org.testcontainers:neo4j:1.15.3")
 
-	implementation("org.springframework:spring-webflux:5.2.7.RELEASE")
+	implementation("org.springframework:spring-webflux:5.3.14")
 
 	implementation("jmagick:jmagick:6.6.9")
 	implementation("org.im4java:im4java:1.4.0")
+	implementation("commons-io:commons-io:2.11.0")
 
 }
 

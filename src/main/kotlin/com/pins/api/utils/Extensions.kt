@@ -41,7 +41,6 @@ fun <T> safe(onError: (()->T)? = null , action : ()->T):T? =
     try {
         action()
     }catch (e:Exception){
-        e.printStackTrace()
         print(e.message)
         onError?.invoke()
     }

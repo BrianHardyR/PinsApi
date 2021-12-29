@@ -21,21 +21,20 @@ class FileController {
         @RequestParam("name") name : String? = null
     ):ResponseEntity<*> = ResponseEntity.ok(fileService.save(file, FileModel(name,type)))
 
-    @GetMapping("/get/{type}/{name}", produces = [
+    @GetMapping("/get/Image/{name}", produces = [
         org.springframework.http.MediaType.IMAGE_JPEG_VALUE,
         org.springframework.http.MediaType.IMAGE_PNG_VALUE,
         org.springframework.http.MediaType.IMAGE_GIF_VALUE
 
     ])
-    fun get(
-        @PathVariable("type") type: MediaType,
+    fun getImage(
         @PathVariable("name") name : String,
         @RequestParam("scale") scale : Int? = null,
         @RequestParam("height") height : Int? = null,
         @RequestParam("width") width : Int? = null
     ):ResponseEntity<*>{
-        val resource = if (scale != null) fileService.scale(type,name,scale)
-        else fileService.resize(type,name,height,width)
+        val resource = if (scale != null) fileService.scale(MediaType.Image,name,scale)
+        else fileService.resize(MediaType.Image,name,height,width)
 
         val file = fileService.get(resource)
         print("Returning data")
