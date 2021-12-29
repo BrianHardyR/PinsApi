@@ -202,7 +202,7 @@ class FileService {
         print("createDifferentResolutionVideos ${resolutionsToProcess.joinToString(separator = ", ") { "$it" }}")
 
 
-        resolutionsToProcess.forEach {
+        resolutionsToProcess.filterIndexed { index, _ -> index == 0 }.forEach {
             // schedule background process for each resolution
             jobScheduler.enqueue { rescaleVideo(fileName,it) }
         }
