@@ -249,11 +249,13 @@ class FileService {
         val result = executeCommand(
             null,
             "ffmpeg",
+            "-y",
             "-i",
             originalPath.toUri().path,
             "-vf",
             "scale=$width:$height",
-            processedPath.toUri().path
+            processedPath.toUri().path,
+            jobContext = jobContext
         )
         jobContext.logger().info("Done $result")
         return result
