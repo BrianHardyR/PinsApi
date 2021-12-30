@@ -6,6 +6,8 @@ import com.pins.api.exceptions.FileUploadError
 import com.pins.api.repository.MediaRepository
 import com.pins.api.utils.safe
 import org.apache.commons.io.IOUtils
+import org.jobrunr.jobs.annotations.Job
+import org.jobrunr.jobs.context.JobContext
 import org.jobrunr.scheduling.JobScheduler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -170,6 +172,7 @@ class FileService {
     fun getVideo(fileName:String, resolution : Int?):Resource{
         val resource = if (resolution == null){
             val originalPath = getUploadPath(MediaType.Video).resolve(fileName)
+            print("Getting video ${originalPath.toUri()}")
             get(originalPath)
         }else{
             val extension = getExtension(fileName)
@@ -177,20 +180,26 @@ class FileService {
             val scaledFileName = "${trimmedFileName}_${resolution}${extension}"
 
             val scaledPath = getProcessedPath(MediaType.Video).resolve(scaledFileName)
+            print("Getting video ${scaledPath.toUri()}")
             get(scaledPath)
         }
 
         return resource
     }
 
-    private fun executeCommand(path: Path? = null, vararg command: String): Boolean {
+    private fun executeCommand(path: Path? = null, vararg command: String, jobContext: JobContext? = null): Boolean {
         print("Executing command ${path?.toUri()}\n")
+        jobContext?.logger()?.info("Executing command ${path?.toUri()}")
         val builder = ProcessBuilder().apply {
             command(*command)
             directory(File(path?.toUri() ?: Paths.get("./").toUri() ))
         }
         print("Command to execute ${builder.command().joinToString(separator = " ") { "$it" }}")
+        jobContext?.logger()?.info("Command to execute ${builder.command().joinToString(separator = " ") { "$it" }}")
+        builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         val process = builder.start()
+        val output = IOUtils.toString(process.inputStream, StandardCharsets.UTF_8)
+        jobContext?.logger()?.info(output)
         val exitCode = process.waitFor()
         print("Command executed $exitCode")
         return exitCode == 0
@@ -217,17 +226,19 @@ class FileService {
 
         print("createDifferentResolutionVideos ${resolutionsToProcess.joinToString(separator = ", ") { "$it" }}")
 
-
         resolutionsToProcess.forEach {
             // schedule background process for each resolution
-            jobScheduler.enqueue { rescaleVideo(fileName,it) }
+            val job = jobScheduler.enqueue { rescaleVideo(fileName,it, JobContext.Null) }
+
         }
 
     }
 
-    fun rescaleVideo(fileName: String, resolution : Pair<Int,Int>) : Boolean{
+    @Job(retries = 2)
+    fun rescaleVideo(fileName: String, resolution : Pair<Int,Int>, jobContext: JobContext) : Boolean{
         val (width,height) = resolution
         print("\nrescaleVideo ${width}x${height}")
+        jobContext.logger().info("rescaleVideo $fileName ${width}x${height}")
         val extension = getExtension(fileName)
         val fileName_ = fileName.replace(extension,"")
         val newFileName = "${fileName_}_${resolution.second}${extension}"
@@ -244,6 +255,7 @@ class FileService {
             "scale=$width:$height",
             processedPath.toUri().path
         )
+        jobContext.logger().info("Done $result")
         return result
     }
 

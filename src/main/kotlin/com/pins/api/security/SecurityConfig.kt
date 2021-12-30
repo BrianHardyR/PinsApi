@@ -53,6 +53,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             ?.antMatchers("/")?.permitAll()
             ?.antMatchers("/auth/**")?.permitAll()
             ?.antMatchers("/static/**")?.permitAll()
+            ?.antMatchers("/file/get/**")?.permitAll()
             ?.anyRequest()?.authenticated()
     }
 

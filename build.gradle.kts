@@ -27,6 +27,9 @@ dependencies {
 
 	implementation ("org.jobrunr:jobrunr-spring-boot-starter:4.0.5")
 
+	implementation ("org.springframework.boot:spring-boot-starter-jdbc")
+	implementation ("mysql:mysql-connector-java")
+
 	implementation ("org.springframework.boot:spring-boot-starter-security")
 	testImplementation ("org.springframework.security:spring-security-test")
 
