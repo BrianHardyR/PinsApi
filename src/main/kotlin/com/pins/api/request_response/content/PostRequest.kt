@@ -1,8 +1,17 @@
 package com.pins.api.request_response.content
 
-import com.pins.api.entities.content.Post
+import com.pins.api.entities.content.Content
+import com.pins.api.entities.content.MediaContent
+import com.pins.api.entities.content.PostLocation
 
 data class PostRequest(
-    val postId : Long? = null,
-    val post : Post
+    val commentOf : Long? = null,
+    val contents : List<Content> = emptyList(),
+    val media : List<MediaRequest> = emptyList(),
+    val `post_locations` : List<PostLocation> = emptyList()
+)
+
+data class MediaRequest(
+    val mediaId : Long,
+    val content : MediaContent
 )

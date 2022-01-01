@@ -3,7 +3,6 @@ package com.pins.api
 import com.pins.api.controller.AccountController
 import com.pins.api.entities.auth.Account
 import com.pins.api.entities.auth.AccountUser
-import com.pins.api.entities.content.*
 import com.pins.api.entities.location.Location
 import com.pins.api.repository.AccountRepository
 import com.pins.api.repository.AccountUserRepository
@@ -72,51 +71,6 @@ class ApiApplicationTests {
                 lon = 23.891177789967
             )
         )
-    }
-
-
-    @Test
-    fun savePostTest() {
-        val post = Post(
-            content = listOf(
-                Content(
-                    type = ContentType.String,
-                    text = listOf("Random Text and gibberish")
-                )
-            ),
-            locations = listOf(
-                PostLocation(
-                    locations = listOf(
-                        Location(
-                            lat = 23.999999,
-                            lon = 25.44444
-                        ),
-						Location(
-							lat = 69.09990,
-							lon = 34.898989
-						)
-                    )
-                )
-            ),
-			account = accountRepository.findAll().first(),
-			media = listOf(
-				Media(
-					type = MediaType.Image,
-					url = "mediaurl.example.link",
-					tag = MediaContent(
-						content = "Media content",
-						location = Location(
-							lat = 45.99999,
-							lon = 55.99999
-						)
-					)
-				)
-			),
-			commentOf = postRepository.findAll().last()
-        )
-
-		postRepository.save(post)
-
     }
 
     @Test

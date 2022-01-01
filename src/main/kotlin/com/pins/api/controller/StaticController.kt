@@ -5,6 +5,7 @@ import com.pins.api.entities.auth.AuthProviderType
 import com.pins.api.entities.auth.LinkType
 import com.pins.api.entities.content.ContentType
 import com.pins.api.entities.content.MediaType
+import com.pins.api.entities.content.Sentiment
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -26,6 +27,7 @@ class StaticController {
     @GetMapping("/mediatype")
     fun mediaType() = ResponseEntity.ok(MediaType.values())
 
-
+    @GetMapping("/sentiment")
+    fun sentiment() = ResponseEntity.ok(Sentiment.values())
 
 }

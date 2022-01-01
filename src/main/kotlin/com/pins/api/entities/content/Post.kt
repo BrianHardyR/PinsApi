@@ -3,10 +3,7 @@ package com.pins.api.entities.content
 import com.pins.api.entities.Entity
 import com.pins.api.entities.auth.Account
 import com.pins.api.entities.location.Location
-import org.springframework.data.neo4j.core.schema.GeneratedValue
-import org.springframework.data.neo4j.core.schema.Id
-import org.springframework.data.neo4j.core.schema.Node
-import org.springframework.data.neo4j.core.schema.Relationship
+import org.springframework.data.neo4j.core.schema.*
 
 @Node("Post")
 data class Post(
@@ -21,7 +18,9 @@ data class Post(
     @Relationship("POST_MEDIA")
     val media: List<Media> = emptyList(),
     @Relationship("BELONGS_TO")
-    val account: Account
+    val account: Account,
+    @Relationship("SENTIMENT")
+    val sentiment:HashSet<PostSentiment> = HashSet()
 ):Entity()
 
 @Node("PostLocations")
@@ -30,6 +29,15 @@ data class PostLocation(
     var id : Long? = null,
     var locations : List<Location> = emptyList(),
     val isRoute : Boolean = locations.size == 3
+):Entity()
+
+
+@RelationshipProperties
+data class PostSentiment(
+    @Id @GeneratedValue var id : Long? = null,
+    var sentiment : Sentiment,
+    @TargetNode
+    var account : Account
 ):Entity()
 
 @Node("Content")
@@ -46,4 +54,8 @@ data class Content(
 
 enum class ContentType{
     String,List
+}
+
+enum class Sentiment{
+    LIKE,DISLIKE
 }

@@ -14,7 +14,7 @@ data class Media(
     val type : MediaType,
     val url : String,
     @Relationship("MEDIA_CONTENT")
-    val tag : MediaContent? = null,
+    var tag : ArrayList<MediaContent>? = null,
 ): Entity()
 
 @Node("MediaContent")
@@ -22,6 +22,7 @@ data class MediaContent(
     @Id @GeneratedValue
     var id : Long? = null,
     var content : String,
+    @Relationship("MEDIA_LOCATION")
     var location : Location? = null
 ):Entity()
 

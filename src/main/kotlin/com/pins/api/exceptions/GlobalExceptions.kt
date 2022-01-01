@@ -21,3 +21,9 @@ class UserNotFound:RuntimeException("User not found please register")
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 class FileUploadError : RuntimeException("File upload error")
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+class FileNotFound:RuntimeException("Media not found")
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+class PostNotFound:RuntimeException("Parent comment not found")
