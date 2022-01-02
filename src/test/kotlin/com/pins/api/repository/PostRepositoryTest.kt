@@ -12,9 +12,6 @@ class PostRepositoryTest {
     @Test
     fun getSentimentByAccountAndPostTest(){
 
-        val sentiment = postRepository.getSentimentByAccountAndPost(2,14)
-        assert(sentiment != null)
-
     }
 
 }

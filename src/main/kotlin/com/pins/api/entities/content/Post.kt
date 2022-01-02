@@ -10,17 +10,17 @@ data class Post(
     @Id @GeneratedValue
     var id: Long? = null,
     @Relationship("POST_CONTENT")
-    val content : List<Content> = emptyList(),
+    var content : List<Content> = emptyList(),
     @Relationship("PINNED_AT")
-    val locations : List<PostLocation> = emptyList(),
+    var locations : List<PostLocation> = emptyList(),
     @Relationship("COMMENT_OF")
-    val commentOf : Post? = null,
+    var commentOf : Post? = null,
     @Relationship("POST_MEDIA")
-    val media: List<Media> = emptyList(),
+    var media: List<Media> = emptyList(),
     @Relationship("BELONGS_TO")
-    val account: Account,
+    var account: Account? = null,
     @Relationship("SENTIMENT")
-    val sentiment:HashSet<PostSentiment> = HashSet()
+    var sentiment:MutableSet<PostSentiment> = HashSet()
 ):Entity()
 
 @Node("PostLocations")
@@ -28,7 +28,7 @@ data class PostLocation(
     @Id @GeneratedValue
     var id : Long? = null,
     var locations : List<Location> = emptyList(),
-    val isRoute : Boolean = locations.size == 3
+    val isRoute : Boolean = locations.size > 1
 ):Entity()
 
 

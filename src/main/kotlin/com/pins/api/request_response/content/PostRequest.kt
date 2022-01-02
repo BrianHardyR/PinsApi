@@ -8,10 +8,10 @@ data class PostRequest(
     val commentOf : Long? = null,
     val contents : List<Content> = emptyList(),
     val media : List<MediaRequest> = emptyList(),
-    val `post_locations` : List<PostLocation> = emptyList()
+    val post_locations: List<PostLocation> = emptyList()
 )
 
 data class MediaRequest(
     val mediaId : Long,
-    val content : MediaContent
+    val media_content: MediaContent
 )
