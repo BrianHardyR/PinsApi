@@ -10,4 +10,5 @@ Ffmpeg
 ImageMagick
 Springboot
 Hibernate
+Jobrunr
 ```
